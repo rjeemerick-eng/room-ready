@@ -31,6 +31,10 @@
       color: var(--white);
     }
 
+    /* Hide the mouse pointer after 10s idle so it doesn't linger on the
+       on-screen board display. Reappears on any movement (see script). */
+    body.hide-cursor, body.hide-cursor * { cursor: none !important; }
+
     /* ── Logo / Header ── */
     .header {
       width: 100%;
@@ -449,6 +453,19 @@
   }
   updateClock();
   setInterval(updateClock, 10000);
+
+  // ── Auto-hide the mouse cursor after 10s of inactivity ──
+  // Keeps a stray pointer off the on-screen board. Any movement, click,
+  // scroll, key, or touch brings it back and restarts the countdown.
+  let cursorIdleTimer = null;
+  function scheduleCursorHide() {
+    document.body.classList.remove('hide-cursor');
+    clearTimeout(cursorIdleTimer);
+    cursorIdleTimer = setTimeout(() => document.body.classList.add('hide-cursor'), 10000);
+  }
+  ['mousemove', 'mousedown', 'wheel', 'keydown', 'touchstart'].forEach(evt =>
+    window.addEventListener(evt, scheduleCursorHide, { passive: true }));
+  scheduleCursorHide();
 </script>
 
 </body>
