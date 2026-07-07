@@ -1,6 +1,6 @@
 {
   "name": "room-ready",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Room Ready – Classroom Availability Board",
   "main": "main.js",
   "scripts": {
