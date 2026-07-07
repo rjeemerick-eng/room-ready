@@ -56,6 +56,7 @@ function createWindow() {
       label: 'Room Ready',
       submenu: [
         { label: 'About Room Ready', role: 'about' },
+        { label: 'Check for Updates…', accelerator: 'CmdOrCtrl+U', click: () => updater.checkManual() },
         { type: 'separator' },
         { label: 'Quit', accelerator: 'Cmd+Q', click: () => app.quit() },
       ]
@@ -92,8 +93,6 @@ function createWindow() {
             }
           }
         },
-        { type: 'separator' },
-        { label: 'Check for Updates…', click: () => updater.checkManual() },
       ]
     }
   ]);
