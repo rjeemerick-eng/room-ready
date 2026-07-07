@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Room Ready – Admin</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black: #000;
+      --white: #fff;
+      --tan:   #C5B99A;
+      --green: #046C38;
+      --green-light: #3dbd7a;
+      --red:   #C13B50;
+      --red-light: #e06070;
+    }
+
+    body {
+      background: #0a0a0a;
+      min-height: 100vh;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      color: var(--white);
+      padding: 24px 16px 48px;
+    }
+
+    .top-bar {
+      max-width: 540px;
+      margin: 0 auto 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .top-bar .title {
+      font-size: 0.65rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--tan);
+    }
+    .top-bar .subtitle {
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .back-link {
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #555;
+      text-decoration: none;
+    }
+    .back-link:hover { color: var(--tan); }
+
+    .divider {
+      max-width: 540px;
+      margin: 0 auto 28px;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--tan), transparent);
+    }
+
+    .cards {
+      max-width: 540px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 8px;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .card-info {
+      cursor: default;
+      flex: 1;
+    }
+    .card-info.has-checklist {
+      cursor: pointer;
+    }
+    .card-info.has-checklist:hover .name {
+      color: var(--tan);
+    }
+    .card-info .name {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 3px;
+      transition: color 0.15s;
+    }
+    .card-info .age {
+      font-size: 0.75rem;
+      color: #888;
+      letter-spacing: 0.5px;
+    }
+    .card-info .floor {
+      font-size: 0.65rem;
+      color: #555;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    /* 3-state status control */
+    .status-control {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .status-btns {
+      display: flex;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #333;
+    }
+    .status-btn {
+      padding: 9px 13px;
+      background: #1a1a1a;
+      color: #444;
+      border: none;
+      border-left: 1px solid #333;
+      font-family: inherit;
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .status-btn:first-child { border-left: none; }
+    .status-btn:hover { color: #aaa; }
+    .status-btn.active-closed { background: rgba(193,59,80,0.2);  color: var(--red-light); }
+    .status-btn.active-open   { background: rgba(4,108,56,0.25);  color: var(--green-light); }
+    .status-btn.active-full   { background: rgba(248,197,57,0.2); color: #f8c539; }
+
+    .status-label {
+      font-size: 0.6rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .status-label.open-label   { color: var(--green-light); }
+    .status-label.closed-label { color: var(--red-light); }
+    .status-label.full-label   { color: #f8c539; }
+
+    /* ── Confirm Status Modal ── */
+    .confirm-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 998;
+      align-items: center;
+      justify-content: center;
+    }
+    .confirm-overlay.open { display: flex; }
+    .confirm-modal {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 14px;
+      padding: 28px 24px 22px;
+      width: 86%;
+      max-width: 360px;
+      text-align: center;
+    }
+    .confirm-modal-eyebrow {
+      font-size: 0.58rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--tan);
+      margin-bottom: 6px;
+    }
+    .confirm-modal-room {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+    .confirm-status-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 7px 22px;
+      border-radius: 30px;
+      margin-bottom: 22px;
+    }
+    .confirm-status-badge.badge-open   { background: rgba(4,108,56,0.2);   color: var(--green-light); border: 1px solid rgba(61,189,122,0.35); }
+    .confirm-status-badge.badge-closed { background: rgba(193,59,80,0.15); color: var(--red-light);   border: 1px solid rgba(193,59,80,0.35); }
+    .confirm-status-badge.badge-full   { background: rgba(248,197,57,0.15);color: #f8c539;            border: 1px solid rgba(248,197,57,0.35); }
+    .confirm-modal-actions { display: flex; gap: 10px; }
+    .confirm-apply-btn {
+      flex: 1; padding: 14px;
+      background: var(--white); color: #000;
+      font-family: inherit; font-size: 0.7rem;
+      font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase;
+      border: none; border-radius: 8px; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .confirm-apply-btn:hover { background: var(--tan); }
+    .confirm-cancel-btn {
+      padding: 14px 18px;
+      background: none; color: #666;
+      font-family: inherit; font-size: 0.7rem;
+      letter-spacing: 2px; text-transform: uppercase;
+      border: 1px solid #2a2a2a; border-radius: 8px; cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .confirm-cancel-btn:hover { color: var(--red-light); border-color: rgba(224,96,112,0.4); }
+
+    .note {
+      max-width: 540px;
+      margin: 20px auto 0;
+      font-size: 0.65rem;
+      color: #444;
+      letter-spacing: 1px;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    /* ── Share link card ── */
+    .share-card {
+      max-width: 540px;
+      margin: 0 auto 20px;
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .share-card-label {
+      font-size: 0.58rem;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--tan);
+      margin-bottom: 8px;
+    }
+    .share-link-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .share-url {
+      flex: 1;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      color: #aaa;
+      font-family: 'Helvetica Neue', monospace;
+      font-size: 0.8rem;
+      padding: 9px 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: text;
+      user-select: all;
+    }
+    .copy-btn {
+      background: var(--white);
+      color: #000;
+      font-family: inherit;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 6px;
+      padding: 9px 16px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .copy-btn:hover { background: var(--tan); }
+    .copy-btn.copied { background: var(--green-light); color: #000; }
+    .share-hint {
+      font-size: 0.62rem;
+      color: #444;
+      margin-top: 7px;
+    }
+
+    /* ── Checklist Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(4px);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 28px 28px 24px;
+      width: 90%;
+      max-width: 440px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal-title {
+      font-size: 0.62rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--tan);
+      margin-bottom: 4px;
+    }
+    .modal-room {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+    .modal-items { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+    .modal-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 14px;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .modal-item.checked {
+      border-color: var(--green);
+      background: rgba(4,108,56,0.1);
+    }
+    .modal-item input[type="checkbox"] { display: none; }
+    .modal-check {
+      width: 22px; height: 22px;
+      border: 2px solid #444;
+      border-radius: 6px;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .modal-item.checked .modal-check {
+      border-color: var(--green-light);
+      background: var(--green-light);
+    }
+    .modal-check-tick {
+      color: #000;
+      font-size: 0.75rem;
+      font-weight: 900;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .modal-item.checked .modal-check-tick { opacity: 1; }
+    .modal-item-label { font-size: 0.9rem; line-height: 1.4; }
+
+    .modal-actions { display: flex; gap: 10px; }
+    .modal-confirm {
+      flex: 1; padding: 14px;
+      background: var(--white); color: #000;
+      font-family: inherit; font-size: 0.72rem;
+      font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+      border: none; border-radius: 6px; cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    .modal-confirm:disabled { opacity: 0.3; cursor: not-allowed; }
+    .modal-confirm:not(:disabled):hover { background: var(--tan); }
+    .modal-cancel {
+      padding: 14px 20px;
+      background: none; color: #666;
+      font-family: inherit; font-size: 0.72rem;
+      letter-spacing: 2px; text-transform: uppercase;
+      border: 1px solid #2a2a2a; border-radius: 6px; cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .modal-cancel:hover { color: var(--red-light); border-color: var(--red-light); }
+    .modal-progress {
+      font-size: 0.62rem; letter-spacing: 1px;
+      color: #555; text-align: center; margin-bottom: 14px;
+    }
+    .modal-progress span { color: var(--green-light); font-weight: 700; }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <img id="admin-logo" src="/default-logo.png" alt="Logo"
+        style="width:40px;height:40px;object-fit:contain;display:block;"/>
+      <div>
+        <div class="title" id="admin-church-name">Rock Church</div>
+        <div class="subtitle" id="admin-ministry-name">Rock Kids · Control Panel</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:16px;">
+      <a class="back-link" href="settings.html">⚙ Settings</a>
+      <a class="back-link" href="classroom-board.html">← Board</a>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Volunteer share link -->
+  <div class="share-card">
+    <div class="share-card-label">Volunteer Link — share with your team</div>
+    <div class="share-link-row">
+      <div class="share-url" id="share-url">Loading…</div>
+      <button class="copy-btn" id="copy-btn" onclick="copyLink()">Copy</button>
+    </div>
+    <div class="share-hint">Open this on any phone or tablet connected to the same Wi-Fi.</div>
+  </div>
+
+  <div class="cards" id="cards"></div>
+
+  <p class="note">Tap a toggle to instantly update the board.<br>Tap a room name to view its checklist.</p>
+
+<!-- Confirm Status Modal -->
+<div class="confirm-overlay" id="confirm-modal">
+  <div class="confirm-modal">
+    <div class="confirm-modal-eyebrow">Confirm Change</div>
+    <div class="confirm-modal-room" id="confirm-room-name"></div>
+    <div id="confirm-status-badge" class="confirm-status-badge"></div>
+    <div class="confirm-modal-actions">
+      <button class="confirm-cancel-btn" onclick="cancelConfirm()">Cancel</button>
+      <button class="confirm-apply-btn" onclick="commitConfirm()">Apply Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Checklist Modal -->
+<div class="modal-overlay" id="checklist-modal">
+  <div class="modal">
+    <div class="modal-title">Pre-Open Checklist</div>
+    <div class="modal-room" id="modal-room-name"></div>
+    <div class="modal-progress" id="modal-progress"></div>
+    <div class="modal-items" id="modal-items"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="cancelChecklist()">Cancel</button>
+      <button class="modal-confirm" id="modal-confirm" disabled onclick="confirmChecklist()">Mark Open</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = window.location.origin + '/api/status';
+  let classrooms = [];
+  let checklists = [];
+
+  // ── Pending confirm state ─────────────────────────────────
+  let confirmRoomId     = null;
+  let confirmNewStatus  = null;
+
+  // ── Active checklist modal state ──────────────────────────
+  let pendingRoomId     = null;
+  let pendingRoomStatus = 'open';
+
+  // ── Share link ────────────────────────────────────────────
+  let shareURL = window.location.href; // fallback
+
+  async function loadShareLink() {
+    try {
+      const res = await fetch('/api/info');
+      const info = await res.json();
+      shareURL = info.adminURL;
+    } catch (e) {
+      shareURL = window.location.href;
+    }
+    document.getElementById('share-url').textContent = shareURL;
+  }
+
+  function copyLink() {
+    navigator.clipboard.writeText(shareURL).then(() => {
+      const btn = document.getElementById('copy-btn');
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    }).catch(() => {
+      // Fallback for older browsers
+      const el = document.getElementById('share-url');
+      const range = document.createRange();
+      range.selectNode(el);
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+      document.execCommand('copy');
+      window.getSelection().removeAllRanges();
+    });
+  }
+
+  // ── Load state + config ───────────────────────────────────
+  async function loadAndRender() {
+    try {
+      const [statusRes, clRes] = await Promise.all([
+        fetch(API, { cache: 'no-store' }),
+        fetch(window.location.origin + '/api/checklists', { cache: 'no-store' })
+      ]);
+      classrooms = await statusRes.json();
+      checklists = await clRes.json();
+    } catch (e) {
+      classrooms = [
+        { id: 0, name: "Babies",     age: "Birth – 14 months",      status: "closed", floor: "" },
+        { id: 1, name: "Nursery",    age: "15 months – 2 years",    status: "open",   floor: "1st Floor" },
+        { id: 2, name: "Preschool",  age: "3 years",                status: "open",   floor: "1st Floor" },
+        { id: 3, name: "Preschool",  age: "4 years",                status: "open",   floor: "1st Floor" },
+        { id: 4, name: "Preschool",  age: "5 years / Kindergarten", status: "open",   floor: "1st Floor" },
+        { id: 5, name: "Elementary", age: "1st & 2nd Grade",        status: "open",   floor: "2nd Floor" },
+        { id: 6, name: "Elementary", age: "1st & 2nd Grade",        status: "open",   floor: "2nd Floor" },
+        { id: 7, name: "Elementary", age: "3rd Grade",              status: "open",   floor: "2nd Floor" },
+        { id: 8, name: "Elementary", age: "4th & 5th Grade",        status: "open",   floor: "2nd Floor" },
+      ];
+    }
+    renderCards();
+  }
+
+  function renderCards() {
+    const container = document.getElementById('cards');
+    container.innerHTML = '';
+    classrooms.forEach(c => {
+      const hasChecklist = c.checklistId && checklists.find(cl => cl.id == c.checklistId);
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.dataset.roomId = c.id;
+      card.innerHTML = `
+        <div class="card-info ${hasChecklist ? 'has-checklist' : ''}"
+             ${hasChecklist ? `onclick="openChecklistForRoom(${c.id})"` : ''}>
+          <div class="name">${c.name}</div>
+          <div class="age">${c.age}</div>
+          ${c.floor ? `<div class="floor">${c.floor}</div>` : ''}
+          ${hasChecklist ? `<div class="floor" style="color:#C5B99A;margin-top:4px;">☑ Tap to view checklist</div>` : ''}
+        </div>
+        <div class="status-control">
+          <div class="status-btns">
+            <button class="status-btn ${c.status==='closed'?'active-closed':''}" data-status="closed" onclick="setStatus(${c.id},'closed')">Closed</button>
+            <button class="status-btn ${c.status==='open'  ?'active-open':''}"   data-status="open"   onclick="setStatus(${c.id},'open')">Open</button>
+            <button class="status-btn ${c.status==='full'  ?'active-full':''}"   data-status="full"   onclick="setStatus(${c.id},'full')">Full</button>
+          </div>
+          <span class="status-label ${c.status==='open'?'open-label':c.status==='full'?'full-label':'closed-label'}"
+            id="label-${c.id}">${c.status==='open'?'Open':c.status==='full'?'Full':'Closed'}</span>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  // ── 3-state status handler ────────────────────────────────
+  function setStatus(id, newStatus) {
+    const room = classrooms.find(c => c.id === id);
+    if (!room) return;
+
+    // Don't show confirm if tapping the already-active status
+    if (room.status === newStatus) return;
+
+    // Intercept: if switching to Open and room has checklist, show checklist modal first
+    if (newStatus === 'open' && room.checklistId) {
+      const checklist = checklists.find(cl => cl.id == room.checklistId);
+      if (checklist && checklist.items && checklist.items.length) {
+        pendingRoomId     = id;
+        pendingRoomStatus = newStatus;
+        openChecklistModal(id, room, checklist);
+        return;
+      }
+    }
+
+    // Show confirm popup for all other status changes
+    openConfirmModal(id, newStatus);
+  }
+
+  // ── Confirm status modal ──────────────────────────────────
+  function openConfirmModal(id, newStatus) {
+    confirmRoomId    = id;
+    confirmNewStatus = newStatus;
+    const room = classrooms.find(c => c.id === id);
+    document.getElementById('confirm-room-name').textContent =
+      room.name + (room.age ? ' · ' + room.age : '');
+
+    const badge = document.getElementById('confirm-status-badge');
+    const labels = { open: 'Open', closed: 'Closed', full: 'Full' };
+    badge.textContent  = labels[newStatus] || newStatus;
+    badge.className    = `confirm-status-badge badge-${newStatus}`;
+
+    document.getElementById('confirm-modal').classList.add('open');
+  }
+
+  function cancelConfirm() {
+    confirmRoomId    = null;
+    confirmNewStatus = null;
+    document.getElementById('confirm-modal').classList.remove('open');
+  }
+
+  function commitConfirm() {
+    if (confirmRoomId === null) return;
+    const id     = confirmRoomId;
+    const status = confirmNewStatus;
+    confirmRoomId    = null;
+    confirmNewStatus = null;
+    document.getElementById('confirm-modal').classList.remove('open');
+    applyStatus(id, status);
+    autoSave(id, status);
+  }
+
+  function applyStatus(id, status) {
+    const room = classrooms.find(c => c.id === id);
+    if (room) room.status = status;
+
+    // Update button highlights
+    const card = document.querySelector(`.card[data-room-id="${id}"]`);
+    if (card) {
+      card.querySelectorAll('.status-btn').forEach(btn => {
+        btn.className = 'status-btn';
+        if (btn.dataset.status === status) btn.classList.add(`active-${status}`);
+      });
+    }
+    // Update label
+    const label = document.getElementById(`label-${id}`);
+    if (label) {
+      label.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+      label.className = `status-label ${status}-label`;
+    }
+  }
+
+  // ── Auto-save ─────────────────────────────────────────────
+  async function autoSave(id, status) {
+    const label = document.getElementById(`label-${id}`);
+    const origText = label ? label.textContent : '';
+    if (label) label.textContent = '…';
+    try {
+      const base = window.location.origin;
+      await fetch(`${base}/api/set-status?id=${id}&status=${status}`, { cache: 'no-store' });
+      if (label) {
+        label.textContent = '✓';
+        setTimeout(() => { label.textContent = origText; }, 1200);
+      }
+    } catch (e) {
+      if (label) { label.textContent = origText; }
+    }
+  }
+
+  // ── Open checklist by tapping the room card ───────────────
+  function openChecklistForRoom(id) {
+    const room = classrooms.find(c => c.id === id);
+    if (!room || !room.checklistId) return;
+    const checklist = checklists.find(cl => cl.id == room.checklistId);
+    if (!checklist) return;
+    openChecklistModal(id, room, checklist);
+  }
+
+  // ── Checklist Modal ───────────────────────────────────────
+  function openChecklistModal(roomId, room, checklist) {
+    pendingRoomId = roomId;
+    document.getElementById('modal-room-name').textContent = room.name + (room.age ? ' · ' + room.age : '');
+    const itemsEl = document.getElementById('modal-items');
+    itemsEl.innerHTML = '';
+
+    checklist.items.forEach((item, i) => {
+      const div = document.createElement('div');
+      div.className = 'modal-item';
+      div.id = `modal-item-${i}`;
+      div.innerHTML = `
+        <div class="modal-check"><span class="modal-check-tick">✓</span></div>
+        <span class="modal-item-label">${item}</span>
+      `;
+      div.onclick = () => toggleModalItem(i, checklist.items.length);
+      itemsEl.appendChild(div);
+    });
+
+    updateModalProgress(0, checklist.items.length);
+    document.getElementById('checklist-modal').classList.add('open');
+  }
+
+  function toggleModalItem(i, total) {
+    const el = document.getElementById(`modal-item-${i}`);
+    el.classList.toggle('checked');
+    const checked = document.querySelectorAll('.modal-item.checked').length;
+    updateModalProgress(checked, total);
+  }
+
+  function updateModalProgress(checked, total) {
+    document.getElementById('modal-progress').innerHTML =
+      `<span>${checked}</span> of ${total} items completed`;
+    document.getElementById('modal-confirm').disabled = (checked < total);
+  }
+
+  function cancelChecklist() {
+    pendingRoomId = null;
+    document.getElementById('checklist-modal').classList.remove('open');
+  }
+
+  function confirmChecklist() {
+    if (pendingRoomId === null) return;
+    const savedId     = pendingRoomId;
+    const savedStatus = pendingRoomStatus;
+    pendingRoomId     = null;
+    pendingRoomStatus = 'open';
+    document.getElementById('checklist-modal').classList.remove('open');
+    // After checklist completion, show the confirm popup before going live
+    openConfirmModal(savedId, savedStatus);
+  }
+
+  // ── Save ──────────────────────────────────────────────────
+  async function saveStatus() {
+    classrooms.forEach(c => {
+      c.status = document.getElementById(`toggle-${c.id}`).checked ? 'open' : 'closed';
+    });
+
+    try {
+      await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(classrooms)
+      });
+      localStorage.setItem('rk_classrooms', JSON.stringify(classrooms));
+    } catch (e) {
+      localStorage.setItem('rk_classrooms', JSON.stringify(classrooms));
+    }
+
+    const msg = document.getElementById('saved-msg');
+    msg.classList.add('show');
+    setTimeout(() => msg.classList.remove('show'), 2500);
+  }
+
+  let adminLogoState = null;
+
+  async function loadConfig() {
+    try {
+      const cfg = await (await fetch('/api/config', { cache: 'no-store' })).json();
+
+      // Update church name and ministry name
+      const churchEl    = document.getElementById('admin-church-name');
+      const ministryEl  = document.getElementById('admin-ministry-name');
+      if (churchEl)   churchEl.textContent   = cfg.churchName   || 'Rock Church';
+      if (ministryEl) ministryEl.textContent = (cfg.ministryName || 'Rock Kids') + ' · Control Panel';
+
+      // Swap logo if state changed
+      const img = document.getElementById('admin-logo');
+      if (img) {
+        if (cfg.hasCustomLogo && adminLogoState !== true) {
+          img.src = `/custom-logo.png?t=${Date.now()}`;
+          adminLogoState = true;
+        } else if (!cfg.hasCustomLogo && adminLogoState === true) {
+          img.src = '/default-logo.png';
+          adminLogoState = false;
+        }
+      }
+    } catch (e) {}
+  }
+
+  loadShareLink();
+  loadAndRender();
+  loadConfig();
+  setInterval(loadConfig, 10000);
+</script>
+
+</body>
+</html>

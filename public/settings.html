@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Room Ready – Settings</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0a0a0a;
+      --surface: #111;
+      --border:  #222;
+      --tan:     #C5B99A;
+      --white:   #fff;
+      --muted:   #666;
+      --green:   #3dbd7a;
+      --red:     #e06070;
+      --accent:  #C5B99A;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      padding-bottom: 60px;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: rgba(10,10,10,0.96);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 14px; }
+    .topbar svg  { width: 36px; height: 36px; }
+    .topbar-title { font-size: 1.1rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+    .topbar-sub   { font-size: 0.6rem; color: var(--tan); letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+    .topbar-links { display: flex; gap: 16px; }
+    .topbar-links a {
+      font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--muted); text-decoration: none;
+    }
+    .topbar-links a:hover { color: var(--tan); }
+
+    /* ── Tab nav ── */
+    .tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      background: var(--bg);
+    }
+    .tab-btn {
+      padding: 14px 20px;
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      font-family: inherit;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab-btn:hover { color: var(--white); }
+    .tab-btn.active { color: var(--tan); border-bottom-color: var(--tan); }
+
+    /* ── Content area ── */
+    .content { max-width: 680px; margin: 0 auto; padding: 32px 28px; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Section ── */
+    .section { margin-bottom: 36px; }
+    .section-title {
+      font-size: 0.62rem; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--tan); margin-bottom: 16px;
+      padding-bottom: 8px; border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Form fields ── */
+    .field { margin-bottom: 20px; }
+    .field label {
+      display: block; font-size: 0.72rem; letter-spacing: 1px;
+      color: #aaa; margin-bottom: 7px; text-transform: uppercase;
+    }
+    .field input[type="text"],
+    .field input[type="password"],
+    .field input[type="number"],
+    .field select {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--white);
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 11px 14px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .field input:focus,
+    .field select:focus { border-color: var(--tan); }
+
+    .field input[type="color"] {
+      width: 52px; height: 38px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      padding: 3px;
+      cursor: pointer;
+    }
+
+    .field-row { display: flex; gap: 16px; align-items: center; }
+    .field-row .field { flex: 1; margin-bottom: 0; }
+    .color-preview {
+      width: 38px; height: 38px; border-radius: 6px;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .hint { font-size: 0.68rem; color: var(--muted); margin-top: 5px; line-height: 1.5; }
+
+    /* Toggle switch */
+    .toggle-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 0; border-bottom: 1px solid #1a1a1a;
+    }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-row-label { font-size: 0.85rem; }
+    .toggle-row-hint  { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+
+    .switch { position: relative; width: 48px; height: 26px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch .slider {
+      position: absolute; inset: 0;
+      background: #2a2a2a; border-radius: 26px;
+      border: 1px solid #333; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .switch .slider::before {
+      content: ''; position: absolute;
+      width: 18px; height: 18px;
+      left: 3px; top: 3px;
+      background: #666; border-radius: 50%;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .switch input:checked + .slider { background: rgba(61,189,122,0.25); border-color: var(--green); }
+    .switch input:checked + .slider::before { transform: translateX(22px); background: var(--green); }
+
+    /* ── Classroom editor ── */
+    .room-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+
+    .room-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .room-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .room-card-name { font-size: 0.9rem; font-weight: 600; }
+    .room-card-age  { font-size: 0.75rem; color: var(--muted); }
+
+    .room-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .room-fields .field { margin-bottom: 0; }
+    .room-fields .field.full { grid-column: 1 / -1; }
+
+    .room-delete-btn {
+      background: none; border: none; color: var(--red);
+      font-size: 0.65rem; letter-spacing: 1px; text-transform: uppercase;
+      cursor: pointer; font-family: inherit; padding: 4px 8px;
+      border-radius: 4px; border: 1px solid rgba(224,96,112,0.3);
+      transition: background 0.15s;
+    }
+    .room-delete-btn:hover { background: rgba(224,96,112,0.1); }
+
+    .add-room-btn {
+      width: 100%; padding: 12px;
+      background: none; border: 1px dashed var(--border);
+      border-radius: 8px; color: var(--muted);
+      font-family: inherit; font-size: 0.72rem;
+      letter-spacing: 2px; text-transform: uppercase;
+      cursor: pointer; transition: border-color 0.15s, color 0.15s;
+    }
+    .add-room-btn:hover { border-color: var(--tan); color: var(--tan); }
+
+    /* ── Checklist editor ── */
+    .checklist-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+
+    .checklist-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .checklist-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .checklist-card-name { font-size: 0.9rem; font-weight: 600; }
+    .checklist-items { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+    .checklist-item-row {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .checklist-item-row input[type="text"] {
+      flex: 1;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 5px;
+      color: var(--white);
+      font-family: inherit;
+      font-size: 0.85rem;
+      padding: 8px 12px;
+      outline: none;
+    }
+    .checklist-item-row input[type="text"]:focus { border-color: var(--tan); }
+    .remove-item-btn {
+      background: none; border: none; color: var(--red);
+      font-size: 1rem; cursor: pointer; padding: 4px 6px; line-height: 1;
+      border-radius: 4px; transition: background 0.15s;
+    }
+    .remove-item-btn:hover { background: rgba(224,96,112,0.1); }
+    .add-item-btn {
+      background: none; border: 1px dashed #2a2a2a;
+      border-radius: 5px; color: var(--muted);
+      font-family: inherit; font-size: 0.7rem;
+      letter-spacing: 1px; text-transform: uppercase;
+      padding: 7px 14px; cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .add-item-btn:hover { border-color: var(--tan); color: var(--tan); }
+
+    .add-checklist-btn {
+      width: 100%; padding: 12px;
+      background: none; border: 1px dashed var(--border);
+      border-radius: 8px; color: var(--muted);
+      font-family: inherit; font-size: 0.72rem;
+      letter-spacing: 2px; text-transform: uppercase;
+      cursor: pointer; transition: border-color 0.15s, color 0.15s;
+    }
+    .add-checklist-btn:hover { border-color: var(--tan); color: var(--tan); }
+
+    /* ── PC badge ── */
+    .pc-badge {
+      display: inline-block;
+      background: rgba(61,189,122,0.1);
+      border: 1px solid rgba(61,189,122,0.3);
+      color: var(--green);
+      font-size: 0.62rem; letter-spacing: 2px; text-transform: uppercase;
+      padding: 3px 10px; border-radius: 20px; margin-bottom: 16px;
+    }
+
+    /* ── Font preset pills ── */
+    .font-preset-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      color: #aaa;
+      font-family: inherit;
+      font-size: 0.72rem;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .font-preset-btn:hover { border-color: var(--tan); color: var(--tan); }
+    .font-preset-btn.active { border-color: var(--tan); color: var(--tan); background: rgba(197,185,154,0.1); }
+
+    /* ── Font custom dropdown ── */
+    .font-picker-wrap { position: relative; }
+    .font-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 200;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    .font-dropdown.open { display: block; }
+    .font-dropdown-item {
+      padding: 9px 14px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      color: #ccc;
+      border-bottom: 1px solid #222;
+      transition: background 0.1s, color 0.1s;
+    }
+    .font-dropdown-item:last-child { border-bottom: none; }
+    .font-dropdown-item:hover,
+    .font-dropdown-item.focused { background: rgba(197,185,154,0.12); color: var(--tan); }
+    .font-dropdown-empty {
+      padding: 12px 14px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    /* ── Auto-save indicator ── */
+    .auto-save-indicator {
+      font-size: 0.6rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--tan);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <img id="settings-topbar-logo" src="/default-logo.png" alt="Logo"
+      style="width:36px;height:36px;object-fit:contain;display:block;"/>
+    <div>
+      <div class="topbar-title" id="tb-ministry">Rock Kids</div>
+      <div class="topbar-sub">Settings</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:20px;">
+    <span class="auto-save-indicator" id="auto-save-indicator"></span>
+    <div class="topbar-links">
+      <a href="classroom-board.html">Board</a>
+      <a href="admin.html">Admin</a>
+    </div>
+  </div>
+</div>
+
+<!-- Tab nav -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('branding')">Branding</button>
+  <button class="tab-btn" onclick="switchTab('classrooms')">Classrooms</button>
+  <button class="tab-btn" onclick="switchTab('checklists')">Checklists</button>
+  <button class="tab-btn" onclick="switchTab('display')">Display</button>
+  <button class="tab-btn" onclick="switchTab('integration')">Integration</button>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+  <!-- ── BRANDING ── -->
+  <div class="tab-panel active" id="tab-branding">
+
+    <div class="section">
+      <div class="section-title">Logo</div>
+      <div id="logo-preview-wrap" style="display:none;margin-bottom:14px;">
+        <img id="logo-preview" src="" alt="Logo" style="height:64px;border-radius:8px;border:1px solid #222;background:#111;padding:6px;display:block;margin-bottom:10px;"/>
+        <button class="room-delete-btn" onclick="removeLogo()">Remove Logo</button>
+      </div>
+      <input type="file" id="logo-file-input" accept="image/*" style="display:none" onchange="handleLogoUpload(this)"/>
+      <button class="add-room-btn" onclick="triggerLogoUpload()">+ Upload Custom Logo</button>
+      <div class="hint" style="margin-top:8px;">PNG, JPG, or SVG. Displayed on the board and admin panel in place of the default icon. Recommended: square, at least 128×128px.</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Church Identity</div>
+      <div class="field">
+        <label>Church Name</label>
+        <input type="text" id="churchName" placeholder="e.g. Rock Church"/>
+      </div>
+      <div class="field">
+        <label>Kids Ministry Name</label>
+        <input type="text" id="ministryName" placeholder="e.g. Rock Kids"/>
+      </div>
+      <div class="field">
+        <label>Service Label</label>
+        <input type="text" id="serviceLabel" placeholder="e.g. Sunday Service"/>
+        <div class="hint">Appears in the footer of the display board.</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Colors</div>
+      <div class="field">
+        <label>Board Background</label>
+        <div class="field-row">
+          <input type="color" id="bgColor" value="#000000" oninput="syncColorPreview('bgColor','bgPreview')"/>
+          <div class="color-preview" id="bgPreview" style="background:#000000;"></div>
+          <div class="field">
+            <input type="text" id="bgColorHex" placeholder="#000000"
+              oninput="syncHexInput('bgColor','bgColorHex','bgPreview')"/>
+          </div>
+        </div>
+        <div class="hint">Background color of the display board. Try dark navy, deep green, or keep it black.</div>
+      </div>
+      <div class="field">
+        <label>Accent Color</label>
+        <div class="field-row">
+          <input type="color" id="accentColor" value="#C5B99A" oninput="syncColorPreview('accentColor','accentPreview')"/>
+          <div class="color-preview" id="accentPreview" style="background:#C5B99A;"></div>
+          <div class="field">
+            <input type="text" id="accentColorHex" placeholder="#C5B99A"
+              oninput="syncHexInput('accentColor','accentColorHex','accentPreview')"/>
+          </div>
+        </div>
+        <div class="hint">Used for labels, dividers, and highlights.</div>
+      </div>
+      <div class="field">
+        <label>Open Room Color</label>
+        <div class="field-row">
+          <input type="color" id="openColor" value="#3dbd7a" oninput="syncColorPreview('openColor','openPreview')"/>
+          <div class="color-preview" id="openPreview" style="background:#3dbd7a;"></div>
+          <div class="field">
+            <input type="text" id="openColorHex" placeholder="#3dbd7a"
+              oninput="syncHexInput('openColor','openColorHex','openPreview')"/>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Closed Room Color</label>
+        <div class="field-row">
+          <input type="color" id="closedColor" value="#e06070" oninput="syncColorPreview('closedColor','closedPreview')"/>
+          <div class="color-preview" id="closedPreview" style="background:#e06070;"></div>
+          <div class="field">
+            <input type="text" id="closedColorHex" placeholder="#e06070"
+              oninput="syncHexInput('closedColor','closedColorHex','closedPreview')"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Typography</div>
+      <div class="field">
+        <label>Board Font</label>
+        <!-- Quick presets -->
+        <div id="font-presets" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+          <button class="font-preset-btn" onclick="selectFont('')">Default</button>
+          <button class="font-preset-btn" onclick="selectFont('Inter')">Inter</button>
+          <button class="font-preset-btn" onclick="selectFont('Oswald')">Oswald</button>
+          <button class="font-preset-btn" onclick="selectFont('Montserrat')">Montserrat</button>
+          <button class="font-preset-btn" onclick="selectFont('Playfair Display')">Playfair Display</button>
+          <button class="font-preset-btn" onclick="selectFont('Georgia')">Georgia</button>
+        </div>
+        <!-- System font search with custom dropdown -->
+        <div class="font-picker-wrap">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" id="fontFamily" placeholder="Search your Font Book…"
+              autocomplete="off" style="flex:1;"
+              onfocus="openFontDropdown()"
+              oninput="filterFontDropdown(this.value)"/>
+            <button class="add-room-btn" id="load-fonts-btn" onclick="loadSystemFonts(true)"
+              style="width:auto;padding:11px 14px;flex-shrink:0;white-space:nowrap;">
+              Browse Fonts
+            </button>
+          </div>
+          <div class="font-dropdown" id="font-dropdown"></div>
+        </div>
+        <div class="hint" style="margin-top:6px;">
+          Click Browse Fonts once to load your installed fonts — after that the search box shows all of them.
+          Applies to the display board only.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CLASSROOMS ── -->
+  <div class="tab-panel" id="tab-classrooms">
+    <div class="section">
+      <div class="section-title">Rooms</div>
+      <div class="room-list" id="room-list"></div>
+      <button class="add-room-btn" onclick="addRoom()">+ Add Room</button>
+    </div>
+  </div>
+
+  <!-- ── CHECKLISTS ── -->
+  <div class="tab-panel" id="tab-checklists">
+    <div class="section">
+      <div class="section-title">Checklist Templates</div>
+      <p class="hint" style="margin-bottom:18px;">Create reusable checklists that volunteers must complete before a room can be marked Open. Assign them to rooms in the Classrooms tab.</p>
+      <div class="checklist-list" id="checklist-list"></div>
+      <button class="add-checklist-btn" onclick="addChecklist()">+ Create Checklist</button>
+    </div>
+  </div>
+
+  <!-- ── DISPLAY ── -->
+  <div class="tab-panel" id="tab-display">
+    <div class="section">
+      <div class="section-title">Columns</div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-row-label">Show Location / Floor</div>
+          <div class="toggle-row-hint">Display which floor or area the room is on</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="showFloor" checked/>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-row-label">Show Age Group</div>
+          <div class="toggle-row-hint">Display the age range for each room</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="showAgeGroup" checked/>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-row-label">Show Capacity</div>
+          <div class="toggle-row-hint">Display current headcount vs. max (e.g. 12 / 20)</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="showCapacity"/>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Refresh</div>
+      <div class="field">
+        <label>Board Refresh Interval (seconds)</label>
+        <input type="number" id="refreshInterval" value="5" min="2" max="60"/>
+        <div class="hint">How often the display board checks for updates. Lower = faster, higher = less network traffic.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── INTEGRATION ── -->
+  <div class="tab-panel" id="tab-integration">
+
+    <!-- NDI Output -->
+    <div class="section">
+      <div class="section-title">NDI Output</div>
+      <div class="toggle-row" style="margin-bottom:20px;">
+        <div>
+          <div class="toggle-row-label">Enable NDI Output</div>
+          <div class="toggle-row-hint">Broadcast the board as a live NDI video source on your network</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="ndiEnabled" onchange="onNdiToggle(this.checked)"/>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="field">
+        <label>NDI Source Name</label>
+        <input type="text" id="ndiSourceName" placeholder="Room Ready Board"/>
+        <div class="hint">The name that appears in vMix, OBS, Resolume, and other NDI-capable apps on your network.</div>
+      </div>
+      <div class="field">
+        <label>Frame Rate</label>
+        <select id="ndiFps">
+          <option value="24">24 fps</option>
+          <option value="30" selected>30 fps (recommended)</option>
+          <option value="60">60 fps</option>
+        </select>
+      </div>
+      <div id="ndi-status-row" style="margin-top:14px;padding:12px 14px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;font-size:0.78rem;color:#666;">
+        Checking NDI status…
+      </div>
+      <div class="hint" style="margin-top:10px;">
+        Requires the free <strong style="color:#aaa;">NDI Tools</strong> runtime installed on this machine
+        (<a href="https://ndi.video/tools/" target="_blank" style="color:var(--tan);">ndi.video/tools</a>)
+        and <code style="color:#aaa;font-size:0.75rem;">npm install grandiose</code> run once in the app folder.
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="pc-badge">Coming Soon · Planning Center</div>
+      <div class="section-title">Planning Center Check-Ins</div>
+      <div class="toggle-row" style="margin-bottom:20px;">
+        <div>
+          <div class="toggle-row-label">Enable Planning Center Sync</div>
+          <div class="toggle-row-hint">Automatically update room status based on check-in headcount</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="pcEnabled"/>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="field">
+        <label>Personal Access Token — App ID</label>
+        <input type="text" id="pcAppId" placeholder="Paste your PC App ID"/>
+        <div class="hint">Generate at planningcenteronline.com/oauth/applications</div>
+      </div>
+      <div class="field">
+        <label>Personal Access Token — Secret</label>
+        <input type="password" id="pcSecret" placeholder="Paste your PC Secret"/>
+      </div>
+      <div class="field">
+        <label>Check-In Event ID</label>
+        <input type="text" id="pcEventId" placeholder="e.g. 123456"/>
+        <div class="hint">The ID of your recurring Sunday check-in event in Planning Center.</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+
+<script>
+  // ── State ────────────────────────────────────────────────
+  let hasCustomLogo = false; // tracked so saveAll() doesn't accidentally clear it
+
+  // ── Auto-save (debounced) ────────────────────────────────
+  let saveTimer = null;
+
+  function showSaveStatus(state) {
+    const el = document.getElementById('auto-save-indicator');
+    if (state === 'saving') {
+      el.textContent = '● Saving…';
+      el.style.opacity = '1';
+      el.style.color = 'var(--tan)';
+    } else if (state === 'saved') {
+      el.textContent = '✓ Saved';
+      el.style.opacity = '1';
+      el.style.color = 'var(--green)';
+    } else {
+      el.style.opacity = '0';
+    }
+  }
+
+  function debouncedSave() {
+    clearTimeout(saveTimer);
+    showSaveStatus('saving');
+    saveTimer = setTimeout(async () => {
+      try {
+        await saveAll();
+        showSaveStatus('saved');
+        setTimeout(() => showSaveStatus('idle'), 2000);
+      } catch (e) {
+        const el = document.getElementById('auto-save-indicator');
+        el.textContent = '✗ Save failed';
+        el.style.opacity = '1';
+        el.style.color = 'var(--red)';
+        setTimeout(() => showSaveStatus('idle'), 4000);
+      }
+    }, 800);
+  }
+
+  // Listen to all input/change events inside the content area
+  // Skip file inputs — logo upload handles its own save to avoid a race condition
+  // where the debounce fires before the upload fetch completes and clears hasCustomLogo
+  document.addEventListener('input',  e => { if (e.target.closest('.content') && e.target.type !== 'file') debouncedSave(); });
+  document.addEventListener('change', e => { if (e.target.closest('.content') && e.target.type !== 'file') debouncedSave(); });
+
+  // ── Tab switching ────────────────────────────────────────
+  function switchTab(name) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  // ── Color pickers ────────────────────────────────────────
+  function syncColorPreview(inputId, previewId) {
+    const val = document.getElementById(inputId).value;
+    document.getElementById(previewId).style.background = val;
+    const hexKey = inputId + 'Hex';
+    const hexEl = document.getElementById(hexKey);
+    if (hexEl) hexEl.value = val;
+  }
+  function syncHexInput(colorId, hexId, previewId) {
+    const val = document.getElementById(hexId).value;
+    if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+      document.getElementById(colorId).value = val;
+      document.getElementById(previewId).style.background = val;
+    }
+  }
+
+  // ── Checklist templates ──────────────────────────────────
+  let checklists = [];
+
+  function renderChecklists() {
+    const list = document.getElementById('checklist-list');
+    list.innerHTML = '';
+    checklists.forEach((cl, ci) => {
+      const card = document.createElement('div');
+      card.className = 'checklist-card';
+      card.innerHTML = `
+        <div class="checklist-card-header">
+          <input type="text" value="${cl.name || ''}" placeholder="Checklist name"
+            style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:5px;color:#fff;font-family:inherit;font-size:0.95rem;font-weight:600;padding:6px 10px;outline:none;width:60%;"
+            oninput="checklists[${ci}].name=this.value"/>
+          <button class="room-delete-btn" onclick="deleteChecklist(${ci})">Remove</button>
+        </div>
+        <div class="checklist-items" id="cl-items-${ci}">
+          ${(cl.items || []).map((item, ii) => `
+            <div class="checklist-item-row">
+              <input type="text" value="${item}" placeholder="Checklist item…"
+                oninput="checklists[${ci}].items[${ii}]=this.value"/>
+              <button class="remove-item-btn" onclick="removeItem(${ci},${ii})">✕</button>
+            </div>
+          `).join('')}
+        </div>
+        <button class="add-item-btn" onclick="addItem(${ci})">+ Add Item</button>
+      `;
+      list.appendChild(card);
+    });
+  }
+
+  function addChecklist() {
+    const newId = Date.now();
+    checklists.push({ id: newId, name: 'New Checklist', items: [''] });
+    renderChecklists();
+    renderRooms();
+    debouncedSave();
+    const cards = document.querySelectorAll('.checklist-card');
+    if (cards.length) cards[cards.length - 1].scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function deleteChecklist(ci) {
+    const removed = checklists.splice(ci, 1)[0];
+    rooms.forEach(r => { if (r.checklistId == removed.id) r.checklistId = null; });
+    renderChecklists();
+    renderRooms();
+    debouncedSave();
+  }
+
+  function addItem(ci) {
+    checklists[ci].items.push('');
+    renderChecklists();
+    renderRooms();
+    debouncedSave();
+  }
+
+  function removeItem(ci, ii) {
+    checklists[ci].items.splice(ii, 1);
+    renderChecklists();
+    renderRooms();
+    debouncedSave();
+  }
+
+  // ── Room list ────────────────────────────────────────────
+  let rooms = [];
+
+  function renderRooms() {
+    const list = document.getElementById('room-list');
+    list.innerHTML = '';
+    rooms.forEach((r, i) => {
+      const card = document.createElement('div');
+      card.className = 'room-card';
+      card.innerHTML = `
+        <div class="room-card-header">
+          <div>
+            <div class="room-card-name">${r.name || 'New Room'}</div>
+            <div class="room-card-age">${r.age || ''}</div>
+          </div>
+          <button class="room-delete-btn" onclick="deleteRoom(${i})">Remove</button>
+        </div>
+        <div class="room-fields">
+          <div class="field">
+            <label>Room Name</label>
+            <input type="text" value="${r.name || ''}"
+              oninput="rooms[${i}].name=this.value; updateRoomHeader(${i})"/>
+          </div>
+          <div class="field">
+            <label>Age Group</label>
+            <input type="text" value="${r.age || ''}"
+              oninput="rooms[${i}].age=this.value; updateRoomHeader(${i})"/>
+          </div>
+          <div class="field">
+            <label>Location / Floor</label>
+            <input type="text" value="${r.floor || ''}"
+              oninput="rooms[${i}].floor=this.value"/>
+          </div>
+          <div class="field">
+            <label>Max Capacity</label>
+            <input type="number" value="${r.capacity || 20}" min="1"
+              oninput="rooms[${i}].capacity=parseInt(this.value)||20"/>
+          </div>
+          <div class="field full">
+            <label>Required Checklist (to open room)</label>
+            <select onchange="rooms[${i}].checklistId=this.value||null">
+              <option value="">— None —</option>
+              ${checklists.map(cl => `<option value="${cl.id}" ${r.checklistId == cl.id ? 'selected' : ''}>${cl.name}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+      `;
+      list.appendChild(card);
+    });
+  }
+
+  function updateRoomHeader(i) {
+    const cards = document.querySelectorAll('.room-card');
+    if (cards[i]) {
+      cards[i].querySelector('.room-card-name').textContent = rooms[i].name || 'New Room';
+      cards[i].querySelector('.room-card-age').textContent  = rooms[i].age  || '';
+    }
+  }
+
+  function addRoom() {
+    const newId = Math.max(0, ...rooms.map(r => r.id)) + 1;
+    rooms.push({ id: newId, name: '', age: '', status: 'open', floor: '', capacity: 20, checklistId: null });
+    renderRooms();
+    debouncedSave();
+    const cards = document.querySelectorAll('.room-card');
+    if (cards.length) cards[cards.length - 1].scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function deleteRoom(i) {
+    rooms.splice(i, 1);
+    renderRooms();
+    debouncedSave();
+  }
+
+  // ── Load config + state ──────────────────────────────────
+  async function loadAll() {
+    const [cfgRes, stateRes, clRes] = await Promise.all([
+      fetch('/api/config'),
+      fetch('/api/status'),
+      fetch('/api/checklists')
+    ]);
+    const cfg   = await cfgRes.json();
+    rooms = await stateRes.json();
+    checklists = await clRes.json();
+
+    // Logo preview + topbar
+    hasCustomLogo = !!cfg.hasCustomLogo;
+    if (cfg.hasCustomLogo) {
+      const ts = Date.now();
+      document.getElementById('logo-preview').src = '/custom-logo.png?' + ts;
+      document.getElementById('logo-preview-wrap').style.display = 'block';
+      document.getElementById('settings-topbar-logo').src = '/custom-logo.png?' + ts;
+    }
+
+    // Populate branding
+    document.getElementById('churchName').value   = cfg.churchName   || '';
+    document.getElementById('ministryName').value = cfg.ministryName || '';
+    document.getElementById('serviceLabel').value = cfg.serviceLabel || '';
+    document.getElementById('tb-ministry').textContent = cfg.ministryName || 'Rock Kids';
+
+    // Colors
+    ['bgColor','accentColor','openColor','closedColor'].forEach(id => {
+      const val = cfg[id] || '';
+      if (val) {
+        document.getElementById(id).value = val;
+        document.getElementById(id + 'Hex').value = val;
+        const previewId = id.replace('Color','Preview');
+        const el = document.getElementById(previewId);
+        if (el) el.style.background = val;
+      }
+    });
+
+    // Typography
+    if (cfg.fontFamily !== undefined) {
+      document.getElementById('fontFamily').value = cfg.fontFamily;
+      highlightFontPreset(cfg.fontFamily);
+    }
+
+    // Display
+    document.getElementById('showFloor').checked     = cfg.showFloor !== false;
+    document.getElementById('showAgeGroup').checked  = cfg.showAgeGroup !== false;
+    document.getElementById('showCapacity').checked  = !!cfg.showCapacity;
+    document.getElementById('refreshInterval').value = cfg.refreshInterval || 5;
+
+    // NDI
+    document.getElementById('ndiEnabled').checked    = !!cfg.ndiEnabled;
+    document.getElementById('ndiSourceName').value   = cfg.ndiSourceName || 'Room Ready Board';
+    if (cfg.ndiFps) document.getElementById('ndiFps').value = String(cfg.ndiFps);
+    refreshNdiStatus();
+
+    // Integration
+    const pc = cfg.planningCenter || {};
+    document.getElementById('pcEnabled').checked = !!pc.enabled;
+    document.getElementById('pcAppId').value    = pc.appId   || '';
+    document.getElementById('pcSecret').value   = pc.secret  || '';
+    document.getElementById('pcEventId').value  = pc.eventId || '';
+
+    renderChecklists();
+    renderRooms();
+  }
+
+  // ── Save ─────────────────────────────────────────────────
+  async function saveAll() {
+    const cfg = {
+      churchName:      document.getElementById('churchName').value,
+      ministryName:    document.getElementById('ministryName').value,
+      serviceLabel:    document.getElementById('serviceLabel').value,
+      bgColor:         document.getElementById('bgColor').value,
+      accentColor:     document.getElementById('accentColor').value,
+      openColor:       document.getElementById('openColor').value,
+      closedColor:     document.getElementById('closedColor').value,
+      fontFamily:      document.getElementById('fontFamily').value.trim(),
+      showFloor:       document.getElementById('showFloor').checked,
+      showAgeGroup:    document.getElementById('showAgeGroup').checked,
+      showCapacity:    document.getElementById('showCapacity').checked,
+      refreshInterval: parseInt(document.getElementById('refreshInterval').value) || 2,
+      ndiEnabled:    document.getElementById('ndiEnabled').checked,
+      ndiSourceName: document.getElementById('ndiSourceName').value.trim() || 'Room Ready Board',
+      ndiFps:        parseInt(document.getElementById('ndiFps').value) || 30,
+      planningCenter: {
+        enabled: document.getElementById('pcEnabled').checked,
+        appId:   document.getElementById('pcAppId').value,
+        secret:  document.getElementById('pcSecret').value,
+        eventId: document.getElementById('pcEventId').value,
+      }
+    };
+
+    // Preserve logo flag so it's never accidentally cleared on auto-save
+    if (hasCustomLogo) cfg.hasCustomLogo = true;
+
+    // Config: GET-based save (base64 encoded) — proven reliable
+    const cfgB64 = btoa(unescape(encodeURIComponent(JSON.stringify(cfg))));
+    await Promise.all([
+      fetch(`/api/save-config?data=${encodeURIComponent(cfgB64)}`, { cache: 'no-store' }),
+      fetch('/api/checklists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(checklists)
+      }),
+      fetch('/api/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rooms)
+      })
+    ]);
+
+    document.getElementById('tb-ministry').textContent = cfg.ministryName;
+  }
+
+  // ── Logo upload ───────────────────────────────────────────
+  function triggerLogoUpload() {
+    document.getElementById('logo-file-input').click();
+  }
+
+  async function handleLogoUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+    showSaveStatus('saving');
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      // Use full data URL so the server knows the mime type
+      const dataUrl = e.target.result;
+      const base64  = dataUrl.split(',')[1];
+      try {
+        // POST is correct for binary data — GET URLs have a ~16KB limit
+        // which is too small for most logo images
+        const uploadRes = await fetch('/api/upload-logo', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ base64 })
+        });
+        if (!uploadRes.ok) throw new Error('Server rejected upload');
+        const preview = document.getElementById('logo-preview');
+        preview.src = '/custom-logo.png?' + Date.now();
+        document.getElementById('logo-preview-wrap').style.display = 'block';
+        hasCustomLogo = true;
+        // Update topbar logo in settings immediately
+        document.getElementById('settings-topbar-logo').src = '/custom-logo.png?' + Date.now();
+        // Immediately persist the flag — don't rely on debounce timing
+        await saveAll();
+        showSaveStatus('saved');
+        setTimeout(() => showSaveStatus('idle'), 2000);
+      } catch (err) {
+        const el = document.getElementById('auto-save-indicator');
+        el.textContent = '✗ Logo upload failed';
+        el.style.opacity = '1';
+        el.style.color = 'var(--red)';
+        setTimeout(() => showSaveStatus('idle'), 4000);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function removeLogo() {
+    try {
+      await fetch('/api/remove-logo', { cache: 'no-store' });
+    } catch (e) {}
+    hasCustomLogo = false;
+    document.getElementById('logo-preview-wrap').style.display = 'none';
+    document.getElementById('logo-file-input').value = '';
+    // Revert topbar to default logo
+    document.getElementById('settings-topbar-logo').src = '/default-logo.png';
+    // Persist the removal immediately
+    await saveAll();
+  }
+
+  // ── System font picker ────────────────────────────────────
+  const PRESET_NAMES = ['', 'Inter', 'Oswald', 'Montserrat', 'Playfair Display', 'Georgia'];
+  let allFontFamilies = []; // populated by loadSystemFonts
+
+  function highlightFontPreset(name) {
+    document.querySelectorAll('.font-preset-btn').forEach((btn, i) => {
+      btn.classList.toggle('active', PRESET_NAMES[i] === name);
+    });
+  }
+
+  function selectFont(name) {
+    document.getElementById('fontFamily').value = name;
+    highlightFontPreset(name);
+    closeFontDropdown();
+    debouncedSave();
+  }
+
+  // Custom dropdown logic
+  function openFontDropdown() {
+    filterFontDropdown(document.getElementById('fontFamily').value);
+  }
+
+  function filterFontDropdown(query) {
+    const dd = document.getElementById('font-dropdown');
+    const q  = query.trim().toLowerCase();
+    const matches = allFontFamilies.length
+      ? (q ? allFontFamilies.filter(f => f.toLowerCase().includes(q)) : allFontFamilies)
+      : [];
+
+    if (!matches.length && !allFontFamilies.length) {
+      dd.innerHTML = '<div class="font-dropdown-empty">Click Browse Fonts to load your installed fonts</div>';
+    } else if (!matches.length) {
+      dd.innerHTML = '<div class="font-dropdown-empty">No fonts match "' + query + '"</div>';
+    } else {
+      dd.innerHTML = matches.slice(0, 150).map(name =>
+        `<div class="font-dropdown-item" onmousedown="selectFont('${name.replace(/'/g,"\\'")}')">
+          ${name}
+        </div>`
+      ).join('');
+      if (matches.length > 150) {
+        dd.innerHTML += `<div class="font-dropdown-empty">…and ${matches.length - 150} more — keep typing to narrow</div>`;
+      }
+    }
+    dd.classList.add('open');
+
+    // Update preset highlight as user types
+    highlightFontPreset(document.getElementById('fontFamily').value.trim());
+  }
+
+  function closeFontDropdown() {
+    document.getElementById('font-dropdown').classList.remove('open');
+  }
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.font-picker-wrap')) closeFontDropdown();
+  });
+
+  // Debounce save when typing in font field
+  document.getElementById('fontFamily').addEventListener('input', function() {
+    highlightFontPreset(this.value.trim());
+    debouncedSave();
+  });
+
+  async function loadSystemFonts(showFeedback = false) {
+    const btn = document.getElementById('load-fonts-btn');
+    if (showFeedback) { btn.textContent = 'Loading…'; btn.disabled = true; }
+    try {
+      if (!window.queryLocalFonts) throw new Error('Font Access API not supported');
+      const fonts = await window.queryLocalFonts();
+      allFontFamilies = [...new Set(fonts.map(f => f.family))].sort();
+      if (showFeedback) {
+        btn.textContent = `${allFontFamilies.length} Fonts ✓`;
+        setTimeout(() => { btn.textContent = 'Browse Fonts'; btn.disabled = false; }, 2500);
+        // Open the dropdown right away so user sees all their fonts
+        document.getElementById('fontFamily').focus();
+        openFontDropdown();
+      }
+    } catch (e) {
+      if (showFeedback) {
+        btn.textContent = 'Not Available';
+        setTimeout(() => { btn.textContent = 'Browse Fonts'; btn.disabled = false; }, 3000);
+      }
+    }
+  }
+
+  // Auto-load system fonts silently in background so they're ready when user opens Typography
+  loadSystemFonts(false);
+
+  // ── NDI controls ──────────────────────────────────────────
+  async function refreshNdiStatus() {
+    const row = document.getElementById('ndi-status-row');
+    if (!row) return;
+    try {
+      const s = await (await fetch('/api/ndi-status', { cache: 'no-store' })).json();
+      if (!s.available) {
+        row.style.color = '#666';
+        row.innerHTML = '⚠ NDI not available — install <code>grandiose</code> and the NDI Tools runtime first.';
+      } else if (s.running) {
+        row.style.color = '#3dbd7a';
+        row.innerHTML = `✦ NDI Live — broadcasting as <strong>${s.sourceName}</strong>`;
+      } else {
+        row.style.color = '#555';
+        row.innerHTML = '● NDI ready — toggle on to start broadcasting.';
+      }
+    } catch (e) {
+      row.style.color = '#555';
+      row.innerHTML = '● NDI status unavailable.';
+    }
+  }
+
+  async function onNdiToggle(enabled) {
+    debouncedSave();
+    const action = enabled ? 'start' : 'stop';
+    await fetch(`/api/ndi-control?action=${action}`, { cache: 'no-store' });
+    setTimeout(refreshNdiStatus, 1500);
+  }
+
+  setInterval(refreshNdiStatus, 8000);
+
+  loadAll();
+</script>
+</body>
+</html>

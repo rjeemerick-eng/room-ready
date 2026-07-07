@@ -1,0 +1,80 @@
+========================================
+  ROOM READY v1.0.1 — WHAT CHANGED & HOW TO BUILD
+========================================
+
+WHAT WAS FIXED IN THIS VERSION
+------------------------------
+
+Security (server.js):
+  1. Planning Center credentials no longer leak. /api/config now returns
+     a sanitized config (no appId/secret) to any device other than the
+     board computer itself. The Settings page (localhost) still gets the
+     full config so nothing changes in your workflow.
+  2. Settings-level actions are now localhost-only: settings.html,
+     /api/save-config, POST /api/config, logo upload/remove, and
+     /api/ndi-control all return 403 to phones/other computers.
+     Volunteers can still do everything admin.html needs: view status,
+     toggle rooms, read branding.
+  3. Path traversal fixed. Requests like GET /../app_config.json can no
+     longer escape the public folder and read your config file.
+  4. Saving a config that doesn't include the Planning Center secret
+     (e.g. a client that only ever saw the sanitized version) can no
+     longer wipe the stored secret — existing credentials are preserved.
+  5. Request bodies are capped at 10 MB so a bad upload can't exhaust
+     memory.
+  6. Removed the GET /api/save-logo endpoint — base64 images in a URL
+     exceed Node's ~16KB header limit for any real logo. The POST
+     endpoint (which settings.html already uses) is the right path.
+
+Reliability (server.js, main.js):
+  7. JSON writes are now atomic (write temp file, then rename). A power
+     loss mid-write on Sunday morning can no longer corrupt
+     classroom_state.json or app_config.json.
+  8. NDI config polling no longer throws silently when app_config.json
+     doesn't exist yet (first launch). It falls back to defaults and
+     logs errors once instead of every 5 seconds.
+  9. Removed dead code in the NDI polling loop.
+ 10. window-all-closed handler documented — the app correctly stays
+     alive in the tray on all platforms when the board window closes.
+
+Packaging (package.json):
+ 11. ndi.js added to the build "files" list. The packaged app previously
+     would have crashed on launch with "Cannot find module './ndi'".
+ 12. Removed the extraResources entry for classroom_state.json — state
+     now lives in the userData folder, and the entry would fail the
+     build if the file didn't exist in the project root.
+ 13. Added asarUnpack for grandiose — native .node modules must be
+     unpacked from the asar archive to load at runtime.
+ 14. Version bumped to 1.0.1.
+
+HOW TO BUILD
+------------
+
+On your Mac (required for the signed DMG — your Developer ID cert
+lives in your keychain):
+
+  1. Unzip this folder somewhere, open Terminal in it
+  2. npm install
+  3. npm run rebuild-ndi        (compiles grandiose against Electron 28)
+  4. npm run build              (produces dist/Room Ready-1.0.1-*.dmg)
+
+  Note: the dmg config references build/dmg-background.png — copy your
+  existing background image into build/ (it wasn't in the uploaded
+  files). Same for build/icon.ico if you build for Windows.
+
+For the Windows installer:
+  npm run build-win             (run on a Windows machine, needs
+                                 build/icon.ico)
+
+For the no-installer .bat workflow (running from source):
+  Everything works as before — SETUP (Run Once).bat then
+  START Rock Kids.bat. No changes needed.
+
+QUICK SANITY CHECK AFTER BUILDING
+---------------------------------
+  - Launch the app; board window opens, volunteer link pop-up appears
+  - From a phone on the same Wi-Fi: admin link works, toggles work
+  - From the phone, try opening /settings.html → should say the action
+    is only allowed from the board computer (that's the fix working)
+  - On the board computer: Settings opens normally, all fields intact
+========================================

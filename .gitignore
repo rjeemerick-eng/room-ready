@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+out/
+
+# Logs
+*.log
+npm-debug.log*
+
+# macOS
+.DS_Store
+
+# Local runtime data (only created when run outside Electron)
+classroom_state.json
+app_config.json
+checklists.json
+custom-logo.png
+*.tmp
+
+# Editor
+.vscode/
+.idea/
