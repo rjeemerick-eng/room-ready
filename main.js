@@ -75,7 +75,23 @@ function createWindow() {
         },
         { type: 'separator' },
         { label: 'Reload Board', accelerator: 'Cmd+R', click: () => mainWindow && mainWindow.reload() },
-        { label: 'Toggle Full Screen', accelerator: 'Ctrl+Cmd+F', role: 'togglefullscreen' },
+        {
+          label: 'Toggle Full Screen',
+          accelerator: 'Ctrl+Cmd+F',
+          click: () => {
+            if (!mainWindow) return;
+            // Use simple (pre-Lion) fullscreen on macOS, not native fullscreen.
+            // Native fullscreen moves to its own Space where macOS re-shows the
+            // cursor near the top edge, overriding the board's CSS `cursor:none`.
+            // Simple fullscreen keeps it an ordinary window covering the screen,
+            // so the idle cursor-hide works.
+            if (process.platform === 'darwin') {
+              mainWindow.setSimpleFullScreen(!mainWindow.isSimpleFullScreen());
+            } else {
+              mainWindow.setFullScreen(!mainWindow.isFullScreen());
+            }
+          }
+        },
         { type: 'separator' },
         { label: 'Check for Updates…', click: () => updater.checkManual() },
       ]

@@ -31,9 +31,11 @@
       color: var(--white);
     }
 
-    /* Hide the mouse pointer after 10s idle so it doesn't linger on the
-       on-screen board display. Reappears on any movement (see script). */
-    body.hide-cursor, body.hide-cursor * { cursor: none !important; }
+    /* Hide the mouse pointer after 10s idle on the board display. The class is
+       set on <html> so it covers the whole viewport. (Works in windowed and
+       simple fullscreen; native macOS fullscreen lets the OS re-show the
+       cursor, so main.js makes Toggle Full Screen use simple fullscreen.) */
+    html.hide-cursor, html.hide-cursor * { cursor: none !important; }
 
     /* ── Logo / Header ── */
     .header {
@@ -455,16 +457,20 @@
   setInterval(updateClock, 10000);
 
   // ── Auto-hide the mouse cursor after 10s of inactivity ──
-  // Keeps a stray pointer off the on-screen board. Any movement, click,
-  // scroll, key, or touch brings it back and restarts the countdown.
+  // Keeps a stray pointer off the on-screen board. The class goes on <html>
+  // so it covers the whole viewport. Any movement, click, scroll, key, or
+  // touch brings it back and restarts the countdown; re-arm on fullscreen
+  // changes so entering/leaving fullscreen starts a fresh 10s.
   let cursorIdleTimer = null;
+  const cursorRoot = document.documentElement;
   function scheduleCursorHide() {
-    document.body.classList.remove('hide-cursor');
+    cursorRoot.classList.remove('hide-cursor');
     clearTimeout(cursorIdleTimer);
-    cursorIdleTimer = setTimeout(() => document.body.classList.add('hide-cursor'), 10000);
+    cursorIdleTimer = setTimeout(() => cursorRoot.classList.add('hide-cursor'), 10000);
   }
-  ['mousemove', 'mousedown', 'wheel', 'keydown', 'touchstart'].forEach(evt =>
-    window.addEventListener(evt, scheduleCursorHide, { passive: true }));
+  ['mousemove', 'mousedown', 'mouseup', 'wheel', 'keydown', 'touchstart'].forEach(evt =>
+    document.addEventListener(evt, scheduleCursorHide, { passive: true, capture: true }));
+  document.addEventListener('fullscreenchange', scheduleCursorHide);
   scheduleCursorHide();
 </script>
 
