@@ -21,6 +21,7 @@
     "productName": "Room Ready",
     "copyright": "Room Ready",
     "artifactName": "Room-Ready-${version}-${arch}.${ext}",
+    "npmRebuild": false,
     "publish": [
       {
         "provider": "github",
@@ -41,7 +42,7 @@
     "mac": {
       "category": "public.app-category.utilities",
       "icon": "build/icon.png",
-      "identity": "Developer ID Application: Robert Emerick (9BX9Z5V9U4)",
+      "identity": "Robert Emerick (9BX9Z5V9U4)",
       "notarize": {
         "teamId": "9BX9Z5V9U4"
       },
@@ -95,7 +96,9 @@
   },
   "dependencies": {
     "electron-log": "^5.4.4",
-    "electron-updater": "^6.8.9",
+    "electron-updater": "^6.8.9"
+  },
+  "optionalDependencies": {
     "grandiose": "https://github.com/rse/grandiose/archive/refs/heads/master.tar.gz"
   }
 }
