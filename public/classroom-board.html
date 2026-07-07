@@ -257,6 +257,14 @@
   let cfg = {};
   let refreshTimer = null;
 
+  // Escape untrusted strings before putting them in innerHTML. Room names,
+  // ages, etc. can be written by any device on the network (and later pulled
+  // from Planning Center), so treat them as hostile.
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, ch => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  }
+
   // Google Fonts loaded by their CSS family name (matching what settings saves)
   const GOOGLE_FONTS = {
     'Inter':            'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap',
@@ -360,14 +368,15 @@
     classrooms.forEach(c => {
       const row = document.createElement('div');
       row.className = 'row';
+      const st = ['open', 'closed', 'full'].includes(c.status) ? c.status : 'closed';
       const capText = (c.checkedIn !== undefined && c.capacity)
-        ? `${c.checkedIn} / ${c.capacity}` : (c.capacity ? `— / ${c.capacity}` : '—');
+        ? `${esc(c.checkedIn)} / ${esc(c.capacity)}` : (c.capacity ? `— / ${esc(c.capacity)}` : '—');
       row.innerHTML = `
-        <div class="cell"><span class="badge ${c.status}">${c.status}</span></div>
-        <div class="cell name">${c.name}</div>
-        ${showAge      ? `<div class="cell age">${c.age || ''}</div>`   : ''}
+        <div class="cell"><span class="badge ${st}">${esc(c.status)}</span></div>
+        <div class="cell name">${esc(c.name)}</div>
+        ${showAge      ? `<div class="cell age">${esc(c.age)}</div>`   : ''}
         ${showCapacity ? `<div class="cell floor">${capText}</div>`     : ''}
-        ${showFloor    ? `<div class="cell floor">${c.floor || ''}</div>` : ''}
+        ${showFloor    ? `<div class="cell floor">${esc(c.floor)}</div>` : ''}
       `;
       container.appendChild(row);
     });

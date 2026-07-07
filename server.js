@@ -91,11 +91,29 @@ function saveState(d) { writeJSON(STATE_FILE, d); }
 function loadChecklists()    { return readJSON(CHECKLISTS_FILE, []); }
 function saveChecklists(d)   { writeJSON(CHECKLISTS_FILE, d); }
 
+// Shape guards for the two open-ended POST bodies. A malformed payload (not an
+// array, wrong types) would otherwise be written to disk and then crash the
+// board's renderer (forEach on a non-array) — a one-request denial of service.
+function isValidClassrooms(d) {
+  return Array.isArray(d) && d.every(r =>
+    r && typeof r === 'object' && typeof r.id === 'number' &&
+    (r.status === undefined || ['open', 'closed', 'full'].includes(r.status)));
+}
+function isValidChecklists(d) {
+  return Array.isArray(d) && d.every(c =>
+    c && typeof c === 'object' &&
+    (c.items === undefined || (Array.isArray(c.items) && c.items.every(i => typeof i === 'string'))));
+}
+
 function loadConfig()  {
   const saved = readJSON(CONFIG_FILE, {});
-  return Object.assign({}, DEFAULT_CONFIG, saved, {
+  const cfg = Object.assign({}, DEFAULT_CONFIG, saved, {
     planningCenter: Object.assign({}, DEFAULT_CONFIG.planningCenter, saved.planningCenter || {})
   });
+  // Clamp the board's poll interval so a stray/hostile value (e.g. 0.01)
+  // can't make displays hammer the server.
+  cfg.refreshInterval = Math.min(60, Math.max(2, Number(cfg.refreshInterval) || 2));
+  return cfg;
 }
 
 // Merge-save: if the incoming config omits or blanks the Planning Center
@@ -135,10 +153,32 @@ function getLocalIP() {
   return 'localhost';
 }
 
-// True only when the request comes from the machine running the app.
+// Hosts that legitimately address this server: localhost and its own LAN IP.
+function isAllowedHost(host) {
+  const h = (host || '').split(':')[0].toLowerCase().replace(/^\[|\]$/g, '');
+  return h === 'localhost' || h === '127.0.0.1' || h === '::1' || h === getLocalIP().toLowerCase();
+}
+
+// True only when the request comes from the machine running the app AND
+// addresses it as localhost. The Host check blocks DNS-rebinding, where a
+// foreign domain resolves to 127.0.0.1 to slip past the socket check.
 function isLocalRequest(req) {
   const addr = req.socket.remoteAddress || '';
-  return addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1';
+  const socketLocal = addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1';
+  if (!socketLocal) return false;
+  const h = (req.headers.host || '').split(':')[0].toLowerCase().replace(/^\[|\]$/g, '');
+  return h === 'localhost' || h === '127.0.0.1' || h === '::1';
+}
+
+// CSRF guard: if the browser disclosed where a request came from (Origin or
+// Referer), require it to be one of our own pages. Header-less requests (curl,
+// <img>, top-level navigation) pass here — the localhost gate is what protects
+// the sensitive endpoints; this stops a foreign site from forging writes.
+function crossSiteBlocked(req) {
+  const src = req.headers.origin || req.headers.referer;
+  if (!src) return false;
+  try { return !isAllowedHost(new URL(src).host); }
+  catch (_) { return true; }
 }
 
 function forbidden(res) {
@@ -187,13 +227,18 @@ function readBody(req) {
 // ── HTTP Server ───────────────────────────────────────────────────────────
 
 const server = http.createServer(async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
+  // No CORS headers: every Room Ready page is served from this same origin, so
+  // nothing legitimate makes a cross-origin request. Withholding
+  // Access-Control-Allow-Origin means a malicious page in a browser on the
+  // board computer can't read our responses (e.g. Planning Center creds).
 
   const url = req.url.split('?')[0];
+
+  // Block cross-site forgery of any state-changing request up front.
+  const MUTATING_GET = new Set(['/api/save-config', '/api/set-status', '/api/remove-logo', '/api/ndi-control']);
+  const isMutating = req.method === 'POST' || req.method === 'DELETE'
+                   || (req.method === 'GET' && MUTATING_GET.has(url));
+  if (isMutating && crossSiteBlocked(req)) { forbidden(res); return; }
 
   const NO_CACHE = {
     'Content-Type': 'application/json',
@@ -209,10 +254,15 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // POST /api/status
+  // POST /api/status  (localhost only — volunteers toggle via GET /api/set-status;
+  // only the settings page rewrites the whole room list)
   if (req.method === 'POST' && url === '/api/status') {
+    if (!isLocalRequest(req)) { forbidden(res); return; }
     try {
       const data = await readBody(req);
+      if (!isValidClassrooms(data)) {
+        res.writeHead(400, NO_CACHE); res.end('{"ok":false,"error":"invalid classroom data"}'); return;
+      }
       saveState(data);
       res.writeHead(200, NO_CACHE);
       res.end('{"ok":true}');
@@ -245,10 +295,14 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // POST /api/checklists
+  // POST /api/checklists  (localhost only — edited on the settings page)
   if (req.method === 'POST' && url === '/api/checklists') {
+    if (!isLocalRequest(req)) { forbidden(res); return; }
     try {
       const data = await readBody(req);
+      if (!isValidChecklists(data)) {
+        res.writeHead(400, NO_CACHE); res.end('{"ok":false,"error":"invalid checklist data"}'); return;
+      }
       saveChecklists(data);
       res.writeHead(200, NO_CACHE);
       res.end('{"ok":true}');
@@ -384,8 +438,9 @@ const server = http.createServer(async (req, res) => {
   // sanitized (no Planning Center credentials) for everyone else
   if (req.method === 'GET' && url === '/api/config') {
     const cfg = loadConfig();
+    const full = isLocalRequest(req) && !crossSiteBlocked(req);
     res.writeHead(200, NO_CACHE);
-    res.end(JSON.stringify(isLocalRequest(req) ? cfg : sanitizeConfig(cfg)));
+    res.end(JSON.stringify(full ? cfg : sanitizeConfig(cfg)));
     return;
   }
 
@@ -428,6 +483,15 @@ const server = http.createServer(async (req, res) => {
 });
 
 function start() {
+  // Handle the 'error' event so a port conflict logs cleanly instead of
+  // throwing an unhandled exception that crashes the app at launch.
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`SERVER_ERROR: port ${PORT} is already in use — is Room Ready already running?`);
+    } else {
+      console.error('SERVER_ERROR:', err.message);
+    }
+  });
   server.listen(PORT, '0.0.0.0', () => {
     const ip = getLocalIP();
     console.log('SERVER_READY');

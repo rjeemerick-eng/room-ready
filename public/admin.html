@@ -450,6 +450,13 @@
   let classrooms = [];
   let checklists = [];
 
+  // Escape untrusted strings before putting them in innerHTML — room names and
+  // checklist items can be set by any device on the network.
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, ch => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  }
+
   // ── Pending confirm state ─────────────────────────────────
   let confirmRoomId     = null;
   let confirmNewStatus  = null;
@@ -529,9 +536,9 @@
       card.innerHTML = `
         <div class="card-info ${hasChecklist ? 'has-checklist' : ''}"
              ${hasChecklist ? `onclick="openChecklistForRoom(${c.id})"` : ''}>
-          <div class="name">${c.name}</div>
-          <div class="age">${c.age}</div>
-          ${c.floor ? `<div class="floor">${c.floor}</div>` : ''}
+          <div class="name">${esc(c.name)}</div>
+          <div class="age">${esc(c.age)}</div>
+          ${c.floor ? `<div class="floor">${esc(c.floor)}</div>` : ''}
           ${hasChecklist ? `<div class="floor" style="color:#C5B99A;margin-top:4px;">☑ Tap to view checklist</div>` : ''}
         </div>
         <div class="status-control">
@@ -663,7 +670,7 @@
       div.id = `modal-item-${i}`;
       div.innerHTML = `
         <div class="modal-check"><span class="modal-check-tick">✓</span></div>
-        <span class="modal-item-label">${item}</span>
+        <span class="modal-item-label">${esc(item)}</span>
       `;
       div.onclick = () => toggleModalItem(i, checklist.items.length);
       itemsEl.appendChild(div);
@@ -700,28 +707,6 @@
     document.getElementById('checklist-modal').classList.remove('open');
     // After checklist completion, show the confirm popup before going live
     openConfirmModal(savedId, savedStatus);
-  }
-
-  // ── Save ──────────────────────────────────────────────────
-  async function saveStatus() {
-    classrooms.forEach(c => {
-      c.status = document.getElementById(`toggle-${c.id}`).checked ? 'open' : 'closed';
-    });
-
-    try {
-      await fetch(API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(classrooms)
-      });
-      localStorage.setItem('rk_classrooms', JSON.stringify(classrooms));
-    } catch (e) {
-      localStorage.setItem('rk_classrooms', JSON.stringify(classrooms));
-    }
-
-    const msg = document.getElementById('saved-msg');
-    msg.classList.add('show');
-    setTimeout(() => msg.classList.remove('show'), 2500);
   }
 
   let adminLogoState = null;

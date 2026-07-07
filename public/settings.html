@@ -613,6 +613,12 @@
   // ── State ────────────────────────────────────────────────
   let hasCustomLogo = false; // tracked so saveAll() doesn't accidentally clear it
 
+  // Escape untrusted strings before placing them in innerHTML/attributes.
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, ch => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  }
+
   // ── Auto-save (debounced) ────────────────────────────────
   let saveTimer = null;
 
@@ -690,7 +696,7 @@
       card.className = 'checklist-card';
       card.innerHTML = `
         <div class="checklist-card-header">
-          <input type="text" value="${cl.name || ''}" placeholder="Checklist name"
+          <input type="text" value="${esc(cl.name || '')}" placeholder="Checklist name"
             style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:5px;color:#fff;font-family:inherit;font-size:0.95rem;font-weight:600;padding:6px 10px;outline:none;width:60%;"
             oninput="checklists[${ci}].name=this.value"/>
           <button class="room-delete-btn" onclick="deleteChecklist(${ci})">Remove</button>
@@ -698,7 +704,7 @@
         <div class="checklist-items" id="cl-items-${ci}">
           ${(cl.items || []).map((item, ii) => `
             <div class="checklist-item-row">
-              <input type="text" value="${item}" placeholder="Checklist item…"
+              <input type="text" value="${esc(item)}" placeholder="Checklist item…"
                 oninput="checklists[${ci}].items[${ii}]=this.value"/>
               <button class="remove-item-btn" onclick="removeItem(${ci},${ii})">✕</button>
             </div>
@@ -754,25 +760,25 @@
       card.innerHTML = `
         <div class="room-card-header">
           <div>
-            <div class="room-card-name">${r.name || 'New Room'}</div>
-            <div class="room-card-age">${r.age || ''}</div>
+            <div class="room-card-name">${esc(r.name || 'New Room')}</div>
+            <div class="room-card-age">${esc(r.age || '')}</div>
           </div>
           <button class="room-delete-btn" onclick="deleteRoom(${i})">Remove</button>
         </div>
         <div class="room-fields">
           <div class="field">
             <label>Room Name</label>
-            <input type="text" value="${r.name || ''}"
+            <input type="text" value="${esc(r.name || '')}"
               oninput="rooms[${i}].name=this.value; updateRoomHeader(${i})"/>
           </div>
           <div class="field">
             <label>Age Group</label>
-            <input type="text" value="${r.age || ''}"
+            <input type="text" value="${esc(r.age || '')}"
               oninput="rooms[${i}].age=this.value; updateRoomHeader(${i})"/>
           </div>
           <div class="field">
             <label>Location / Floor</label>
-            <input type="text" value="${r.floor || ''}"
+            <input type="text" value="${esc(r.floor || '')}"
               oninput="rooms[${i}].floor=this.value"/>
           </div>
           <div class="field">
@@ -784,7 +790,7 @@
             <label>Required Checklist (to open room)</label>
             <select onchange="rooms[${i}].checklistId=this.value||null">
               <option value="">— None —</option>
-              ${checklists.map(cl => `<option value="${cl.id}" ${r.checklistId == cl.id ? 'selected' : ''}>${cl.name}</option>`).join('')}
+              ${checklists.map(cl => `<option value="${esc(cl.id)}" ${r.checklistId == cl.id ? 'selected' : ''}>${esc(cl.name)}</option>`).join('')}
             </select>
           </div>
         </div>
